@@ -1,0 +1,42 @@
+version: "3.8"
+
+services:
+  grafana:
+    networks:
+      - grafana-net
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_DATABASE_URL=postgres://user_grafana:!Grafana2@postgres/db_grafana
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    healthcheck:
+      test: wget --spider http://localhost:3000/robots.txt
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    networks:
+      - grafana-net
+    image: postgres:alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: db_grafana
+      POSTGRES_USER: user_grafana
+      POSTGRES_PASSWORD: !Grafana2
+      POSTGRES_HOST_AUTH_METHOD: trust
+    healthcheck:
+      test: ["CMD", "psql", "-U", "user_grafana", "db_grafana", "-c", "select 1;"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+networks:
+  grafana-net:
